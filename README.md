@@ -1,5 +1,12 @@
 # DOSI Laser control firmware
 
+## Issues
+
+For some reason the I2C signals are not wired to the TWI pins on the MCU.
+Probably it's worth patching this on the first PCB.
+
+## Notes
+
 This is firmware (C code) for the microcontroller on the isolated I2C
 master board which controls the lasers in a DOSI box.
 
