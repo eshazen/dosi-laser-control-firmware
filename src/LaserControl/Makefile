@@ -8,10 +8,10 @@
 MCU = atmega328
 
 # 8 MHz for on-board oscillator
-F_OSC = 8000000
+# F_OSC = 8000000
 
 # 16 MHz for Arduino
-# F_OSC = 16000000
+F_OSC = 16000000
 
 CFLAGS = -g -Os -mmcu=$(MCU) $(EXTRAOPT) -DF_CPU=$(F_OSC) -Wl,-u,vfprintf -lprintf_min -lm
 # no-optimization settings for interrupt code
@@ -24,20 +24,21 @@ FUSEOPT = -U hfuse:w:0xd9:m
 # programmer configuration for avrdude programming utility
 
 # for AVRISP programmer on USB
-DUDEPORT  = -c avrispv2 -P usb
+# DUDEPORT  = -c avrispv2 -P usb
 
 # for Arduino bootloader
-# DUDEPORT  = -c arduino -P /dev/ttyACM0
+DUDEPORT  = -c arduino -P /dev/ttyACM0
 
 # set to correct device type; usually an Arduino Uno is 328p
-DUDEMCU = m328
+DUDEMCU = m328p
 
 AVRDUDE  = avrdude $(DUDEPORT) -p $(DUDEMCU) -y -u 
 
-objects = main.o uart.o
+objects = uart.o ../libs/ioport.o
 
-headers = uart.h
+cpp_objects = main.o I2C_BB.o
 
+headers = uart.h ../libs/ioport.h I2C_BB.h
 
 all: $(objects)  main.hex list
 
@@ -51,11 +52,17 @@ list:
 	avr-objdump -h -S main.elf > main.lst
 	avr-size --common -x main.elf
 
+I2C_BB.o: I2C_BB.cpp I2C_BB.h $(headers)
+	avr-c++ -c $(CFLAGS) $< -o $@
+
+main.o: main.cpp $(headers)
+	avr-c++ -c $(CFLAGS) $< -o $@
+
 $(objects): %.o: %.c $(headers)
 	avr-gcc -c $(CFLAGS) $< -o $@
 
-main.elf: $(objects)
-	avr-gcc $(LDFLAGS) $(objects) -o $@
+main.elf: $(objects) $(cpp_objects)
+	avr-c++ $(LDFLAGS) $(objects) $(cpp_objects) -o $@
 
 main.hex: main.elf
 	avr-objcopy -j .text -j .data -O ihex $< $@

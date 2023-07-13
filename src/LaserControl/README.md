@@ -1,7 +1,6 @@
-# UART_stdio
+# Laser control first version
 
-This example shows how the stdio.h facilities can be used in avr-libc.  Note that this is a pretty minimal subset of the standard library on a real OS.
-
-See [the avr-libc manual](https://www.nongnu.org/avr-libc/user-manual/group__avr__stdio.html) for details.
-
-In particular, there is no input editing (backspace, etc) are just put in the buffer.  See example code [uart.c](https://www.nongnu.org/avr-libc/examples/stdiodemo/uart.c) for how to fix this.
+This is a mess at the moment due to the mix of C and C++
+(the I2C_BB library is C++).  Either need to make wrappers
+for the C functions or just convert it all one way
+or the other!
