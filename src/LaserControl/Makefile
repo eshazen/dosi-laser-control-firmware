@@ -34,9 +34,7 @@ DUDEMCU = m328p
 
 AVRDUDE  = avrdude $(DUDEPORT) -p $(DUDEMCU) -y -u 
 
-objects = uart.o ../libs/ioport.o
-
-cpp_objects = main.o I2C_BB.o
+objects = uart.o ../libs/ioport.o main.o I2C_BB.o
 
 headers = uart.h ../libs/ioport.h I2C_BB.h
 
@@ -52,17 +50,11 @@ list:
 	avr-objdump -h -S main.elf > main.lst
 	avr-size --common -x main.elf
 
-I2C_BB.o: I2C_BB.cpp I2C_BB.h $(headers)
-	avr-c++ -c $(CFLAGS) $< -o $@
-
-main.o: main.cpp $(headers)
-	avr-c++ -c $(CFLAGS) $< -o $@
-
 $(objects): %.o: %.c $(headers)
 	avr-gcc -c $(CFLAGS) $< -o $@
 
 main.elf: $(objects) $(cpp_objects)
-	avr-c++ $(LDFLAGS) $(objects) $(cpp_objects) -o $@
+	avr-gcc $(LDFLAGS) $(objects) -o $@
 
 main.hex: main.elf
 	avr-objcopy -j .text -j .data -O ihex $< $@

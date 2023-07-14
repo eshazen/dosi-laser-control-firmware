@@ -8,7 +8,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <ctype.h>
-#include "uart.hh"
+#include "uart.h"
 #include "../libs/ioport.h"
 
 #include "laser_io.h"
@@ -29,15 +29,10 @@ void setup() {
   clear_io_bits( &LASER_ENA_PORT, _BV(LASER_ENA_PIN));
 }
 
-FILE usart0_str;
+FILE usart0_str = FDEV_SETUP_STREAM(USART0SendByte, USART0ReceiveByte, _FDEV_SETUP_RW);
 
 int main (void)
 {
-  // FILE usart0_str = FDEV_SETUP_STREAM(USART0SendByte, USART0ReceiveByte, _FDEV_SETUP_RW);
-  usart0_str.put = USART0SendByte;
-  usart0_str.get = USART0ReceiveByte;
-  usart0_str.flags = _FDEV_SETUP_RW;
-
   setup();
 
   unsigned char c = ' ';
