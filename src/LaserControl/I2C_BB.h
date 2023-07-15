@@ -6,7 +6,7 @@
 // hacked to work with avr-libc
 // converted to C
 
-// some Arduino fudge macros
+#include <stdbool.h>
 #include <avr/io.h>
 #include "../libs/ioport.h"
 #include <util/delay.h>

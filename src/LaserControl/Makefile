@@ -34,9 +34,9 @@ DUDEMCU = m328p
 
 AVRDUDE  = avrdude $(DUDEPORT) -p $(DUDEMCU) -y -u 
 
-objects = uart.o ../libs/ioport.o main.o I2C_BB.o
+objects = uart.o ../libs/ioport.o main.o I2C_BB.o parse.o
 
-headers = uart.h ../libs/ioport.h I2C_BB.h
+headers = uart.h ../libs/ioport.h I2C_BB.h parse.h
 
 all: $(objects)  main.hex list
 

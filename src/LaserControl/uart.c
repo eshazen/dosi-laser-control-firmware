@@ -3,6 +3,7 @@
 //
 
 #include <stdio.h>
+#include <ctype.h>
 #include "uart.h"
 
 // initialize the UART.  Baud rate set in uart.h
@@ -19,6 +20,7 @@ void USART0Init(void)
 
 // send a byte.  stream is provided for stdio compatibility
 // and may be NULL
+// convert <LF> to <CR>,<LF>
 int USART0SendByte(char u8Data, FILE *stream)
 {
   if(u8Data == '\n')
@@ -41,7 +43,7 @@ int USART0CharacterAvailable()
 
 // receive a byte, block in none available
 // argument is ignored
-// echo character
+// DON'T echo character
 // convert <CR> to <LF>
 int USART0ReceiveByte( FILE *stream)
 {
@@ -50,34 +52,36 @@ int USART0ReceiveByte( FILE *stream)
   while(!(UCSR0A&(1<<RXC0))){};
   // Return received data
   c = UDR0;
-  USART0SendByte( c, NULL);
   if(c == '\r') {
     c = '\n';
-    USART0SendByte( c, NULL);
   }
   return c;
 }
 
-
-
+//
+// read string with minimal editing
+// (only backspace recognized)
+//
 void USART0GetString( char *buffer, int max)
 {
-  int n = 0;
   char *p = buffer;
   uint8_t c;
 
   while( 1) {
     c = USART0ReceiveByte( NULL);
-    putchar( c);
     if( c == '\n') {
+      putchar( c);
       *p++ = '\0';
       return;
     }
-    if( c == '\b' && p > buffer) {
-      putchar('\b');
+    if( (c == '\b' || c == '\x7f') && p > buffer) {
+      putchar( '\b');
       --p;
     } else {
-      *p++ = c;
+      if( (p - buffer < max) && isprint(c) ) {
+	putchar( c);
+	*p++ = c;
+      }
     }
     
   }
