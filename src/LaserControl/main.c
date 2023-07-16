@@ -50,7 +50,7 @@ const char menu[] PROGMEM =
   "  L v     - set LEDs\n" \
   "  I l v   - set laser l current to v\n" \
   "  R l [c] - read laser channel\n";
-const char hello[] PROGMEM = "DOSI Laser Control v1.0";
+// const char hello[] PROGMEM = "DOSI Laser Control v1.0";
 
 int main (void)
 {
@@ -64,7 +64,7 @@ int main (void)
 
   LED_DDR ^= (1 << LED_BIT);
 
-  puts_P( hello);
+  puts_P( PSTR("DOSI Laser Control v0.1"));
   
   while( 1) {
     putchar('>');
@@ -91,6 +91,9 @@ int main (void)
 	puts("DI ALL");
       }
       break;
+
+    case 'I':
+      
 
     default:
       puts("ERR");

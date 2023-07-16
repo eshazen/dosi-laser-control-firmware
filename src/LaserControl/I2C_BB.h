@@ -13,13 +13,6 @@
 
 #define delayMicroseconds(d) _delay_us(d)
 
-// define the pins the AVR way
-#define TWI_PORT PORTC
-#define TWI_DDR  DDRC
-
-#define TWI_SDA_BIT PC4
-#define TWI_SCL_BIT PC5
-
 
 #include <inttypes.h>
 
