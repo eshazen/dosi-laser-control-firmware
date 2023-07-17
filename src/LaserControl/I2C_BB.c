@@ -6,6 +6,7 @@
 #include <avr/io.h>
 #include <stdbool.h>
 #include "I2C_BB.h"
+#include "laser_io.h"
 #include "../libs/ioport.h"
 
 static uint8_t _i2c_adr;

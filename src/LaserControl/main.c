@@ -31,8 +31,6 @@ static char buff[40];
 static char tmp[10];
 
 void setup() {
-  set_io_bits( &LASER_ENA_DDR, _BV(LASER_ENA_PIN));
-  clear_io_bits( &LASER_ENA_PORT, _BV(LASER_ENA_PIN));
   i2c_begin();
 }
 

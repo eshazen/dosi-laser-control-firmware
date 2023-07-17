@@ -14,7 +14,7 @@ MCU = atmega328
 F_OSC = 16000000
 
 # define pinout for arduino uno testing
-EXTRAOPT = -DUNO_PINS
+EXTRAOPT = -DFMC_PINS
 
 # define pinout for read hardware
 # EXTRAOPT = -DFMC_PINS
@@ -40,7 +40,7 @@ DUDEMCU = m328p
 
 AVRDUDE  = avrdude $(DUDEPORT) -p $(DUDEMCU) -y -u 
 
-objects = uart.o ../libs/ioport.o main.o I2C_BB.o parse.o
+objects = main.o uart.o ../libs/ioport.o I2C_BB.o parse.o laser_io.o
 
 headers = uart.h ../libs/ioport.h I2C_BB.h parse.h
 

@@ -1,4 +1,9 @@
 
+#include <stdint.h>
+#include "../libs/ioport.h"
+#include "laser_io.h"
+#include "I2C_BB.h"
+
 // data buffer
 static uint8_t data[16];
 
@@ -12,6 +17,17 @@ static uint8_t data[16];
 
 // PCA9547 I2C Mux address = 111 0 aaa 
 #define MUX_ADDR 0x70
+
+//
+// setup I/O
+//
+void laser_setup() {
+  for( uint8_t i=0; i<6; i++) {
+    set_io_bits( enables[i].ddr, _BV( enables[i].pin));
+    clear_io_bits( enables[i].port, _BV( enables[i].pin));
+  }
+}
+
 
 //
 // set I2C mux to channel
