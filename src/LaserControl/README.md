@@ -1,6 +1,7 @@
 # Laser control first version
 
-Converted I2C_BB to pure C
+Tested on Arduino Uno.  Should in principle work on final hardware too.
+
 
 
 

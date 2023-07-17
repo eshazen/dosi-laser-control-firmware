@@ -3,7 +3,7 @@
 ## Issues
 
 For some reason the I2C signals are not wired to the TWI pins on the MCU.
-Probably it's worth patching this on the first PCB.
+Using bit-bang I2C code from Wikipedia.
 
 ## Notes
 
@@ -17,7 +17,7 @@ The firmware accepts control commands from either a USB/serial adapter
 in the DOSI box.  The protocol used is asynchronous serial (UART) with
 the following settings:
 
-* 19200 Baud
+* 9600 Baud
 * 8 data bits
 * 1 stop bit
 * no parity

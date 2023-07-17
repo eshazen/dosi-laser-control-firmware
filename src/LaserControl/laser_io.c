@@ -1,68 +1,129 @@
 
+#include <stdio.h>
 #include <stdint.h>
+#include <avr/pgmspace.h>
+#include <util/delay.h>
 #include "../libs/ioport.h"
 #include "laser_io.h"
-#include "I2C_BB.h"
+#include "i2c_wiki.h"
 
 // data buffer
 static uint8_t data[16];
 
+#define ADDR_W(a) ((a)<<1)
+#define ADDR_R(a) (ADDR_W(a)|1)
+
 // D-POT I2C address with A0 = 0
 #define DPOT_ADDR 0x2E
+#define DPOT_ADDR_W ADDR_W(DPOT_ADDR)
+#define DPOT_ADDR_R ADDR_R(DPOT_ADDR)
 
 // ADC I2C address / regs
 #define ADC_ADDR 0x33
+#define ADC_ADDR_W ADDR_W(ADC_ADDR)
+#define ADC_ADDR_R ADDR_R(ADC_ADDR)
+
 #define ADC_SETUP 0xd2
 #define ADC_CONF 0x0f
 
 // PCA9547 I2C Mux address = 111 0 aaa 
 #define MUX_ADDR 0x70
+#define MUX_ADDR_W ADDR_W(MUX_ADDR)
+#define MUX_ADDR_R ADDR_R(MUX_ADDR)
 
 //
 // setup I/O
 //
 void laser_setup() {
   for( uint8_t i=0; i<6; i++) {
+    // set enable DDR to output
     set_io_bits( enables[i].ddr, _BV( enables[i].pin));
+    // set enables to LOW
     clear_io_bits( enables[i].port, _BV( enables[i].pin));
   }
+  // set I2C mux nRST as output
+  set_io_bits( &I2C_RST_DDR, _BV(I2C_RST_PIN));
+  // set I2C mux nRST high (inactive)
+  set_io_bits( &I2C_RST_PORT, _BV(I2C_RST_PIN));
 }
 
 
 //
 // set I2C mux to channel
 //
-void laser_sel_chan( uint8_t c) {
-  i2c_transmission_begin( MUX_ADDR);
-  data[0] = 0x10 | c;
-  i2c_transmission_write( data, 1);
+bool laser_sel_chan( uint8_t c) {
+  bool nack = false;
+#ifdef FMC_PINS
+  nack |= i2c_write_byte( true, false, MUX_ADDR_W);
+  nack |= i2c_write_byte( false, true, 0x10 | c);
+#endif
+  return nack;
 }
 
 //
 // set digital pot
 //
-void laser_set_pot( uint8_t v) {
+bool laser_set_pot( uint8_t v) {
 
-  i2c_transmission_begin( DPOT_ADDR);
-  data[0] = 0;			/* control byte for register 0 */
-  data[1] = v;
-  i2c_transmission_write( data, 2);
-  i2c_transmission_end();
+  bool nack = false;
+  //  i2c_transmission_begin( DPOT_ADDR);
+  nack |= i2c_write_byte( true, false, DPOT_ADDR_W);
+  nack |= i2c_write_byte( false, false, 0);
+  nack |= i2c_write_byte( false, true, v);
+
+  return nack;
 }
 
 //
 // read laser ADC, 8 channels
 //
-void laser_read_adc( uint16_t* vals) {
+bool laser_read_adc( uint16_t* vals) {
 
-  i2c_transmission_begin( ADC_ADDR);
-  data[0] = ADC_SETUP;
-  data[1] = ADC_CONF;
-  i2c_transmission_write( data, 2);
+  uint8_t c0;
+  uint8_t c1;
+  bool nack = false;
 
-  // read raw data
-  i2c_transmission_read( data, 16);
-  // copy to buffer
-  for( int i=0; i<8; i++)
-    vals[i] = ((data[2*i] & 0xf) << 8) | data[2*i+1];
+  nack |= i2c_write_byte( true, false, ADC_ADDR_W);
+  nack |= i2c_write_byte( false, false, ADC_SETUP);
+  nack |= i2c_write_byte( false, true, ADC_CONF);
+  
+  if( nack)
+    return nack;
+
+  nack = false;
+
+  nack |= i2c_write_byte( true, false, ADC_ADDR_R);
+  for( int i=0; i<8; i++) {
+    c1 = i2c_read_byte( false, false);
+    if( i == 7)
+      c0 = i2c_read_byte( true, false);
+    else
+      c0 = i2c_read_byte( false, false);
+    vals[i] = ((c1 & 15) << 8) | c0;
+  }    
+
+  return nack;
+}
+
+//
+// pulse reset on I2C mux low
+//
+void laser_reset_i2c() {
+  clear_io_bits( &I2C_RST_PORT, _BV(I2C_RST_PIN));
+  _delay_us( 10);
+  set_io_bits( &I2C_RST_PORT, _BV(I2C_RST_PIN));
+  _delay_us( 10);
+}
+
+//
+// set enable on specified laser
+// c = laser# 0..5
+void laser_enable( uint8_t c, bool v) {
+  if( c > 5)
+    return;
+  
+  if( v)
+    set_io_bits( enables[c].port, _BV( enables[c].pin));
+  else
+    clear_io_bits( enables[c].port, _BV( enables[c].pin));
 }
