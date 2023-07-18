@@ -27,6 +27,9 @@ static char tmp[10];
 
 static uint16_t adc[8];
 
+static int i;
+static int n;
+
 void setup() {
   i2c_begin();
   laser_setup();
@@ -42,13 +45,21 @@ char *argv[MAXTOK];
 const char menu[] PROGMEM =
   "  H       - help\n"  \
   "  X       - debug read\n" \
-  "  E l     - disable\n" \
-  "  D [l]   - enable\n" \
+  "  E l     - enaable\n" \
+  "  D [l]   - disable\n" \
   "  L v     - set LEDs\n" \
   "  I l v   - set laser l current to v\n" \
+  "  N l v   - set laser current (non-volatile)\n" \
+  "  C       - clear I2C errors\n" \
+  "  S l     - select I2C bus l\n" \
   "  R l [c] - read laser channel\n";
 const char errmsg[] PROGMEM = "CMD ERR";
-const char erri2c[] PROGMEM = "I2C ERR";
+const char erri2c_s[] PROGMEM = "I2C SEL ERR";
+const char erri2c_w[] PROGMEM = "I2C WRT ERR";
+const char erri2c_r[] PROGMEM = "I2C RD ERR";
+
+// strings in RAM for now
+char *adc_name[] = { "IMON", "PMON", "VSET", "TEMP", " VCC" };
 
 int main (void)
 {
@@ -60,7 +71,7 @@ int main (void)
   stdout = &usart0_str;		/* connect UART to stdout */
   stdin = &usart0_str;		/* connect UART to stdin */
 
-  puts_P( PSTR("DOSI Laser Control v0.2"));
+  puts_P( PSTR("DOSI Laser Control v0.9"));
   
   while( 1) {
 
@@ -76,6 +87,28 @@ int main (void)
     switch( toupper( *buff)) {
     case 'H':
       puts_P( menu);
+      break;
+
+    case 'S':
+      if( argc >= 1) {
+	if( laser_sel_chan( iargv[1])) {
+	  puts_P( erri2c_s);
+	}
+      } else
+	puts_P( errmsg);
+      break;
+
+    case 'C':
+      I2C_RST_PORT &= ~_BV(I2C_RST_PIN);
+      _delay_us(10);
+      I2C_RST_PORT |= _BV(I2C_RST_PIN);
+      break;
+
+    case 'L':
+      if( argc >= 2)
+	laser_leds( iargv[1]);
+      else
+	puts_P( errmsg);
       break;
 
     case 'E':
@@ -94,12 +127,25 @@ int main (void)
       }
       break;
 
+    case 'N':
+      if( argc < 3)
+	puts_P( errmsg);
+      else {
+	if( laser_sel_chan( iargv[1]))
+	  puts_P( erri2c_s);
+	if(laser_set_pot( iargv[2], 2))
+	  puts_P( erri2c_w);
+      }
+      break;
+
     case 'I':
       if( argc < 3)
 	puts_P( errmsg);
       else {
-	if( laser_sel_chan( iargv[1]) || laser_set_pot( iargv[2]))
-	  puts_P( erri2c);
+	if( laser_sel_chan( iargv[1]))
+	  puts_P( erri2c_s);
+	if(laser_set_pot( iargv[2], 0))
+	  puts_P( erri2c_w);
       }
       break;
 
@@ -123,15 +169,18 @@ int main (void)
       if( argc < 2)
 	puts_P( errmsg);
       else {
-	if( laser_sel_chan( iargv[1]) || laser_read_adc( adc))
-	  puts_P( erri2c);
+	if( laser_sel_chan( iargv[1]))
+	  puts_P( erri2c_s);
+	if( laser_read_adc( adc))
+	  puts_P( erri2c_r);
 	else {
-	  for( int i=0; i<8; i++) {
-	    utoa( adc[i], tmp, 10);
-	    fputs( tmp, stdout);
+	  for( i=0; i<5; i++) {
+	    fputs( adc_name[i], stdout);
 	    putchar( ' ');
+	    format_mv( tmp, adc[i]);
+	    fputs( tmp, stdout);
+	    putchar( '\n');
 	  }
-	  putchar( '\n');
 	}
       }
       break;

@@ -1,5 +1,5 @@
 #
-# Makefile for UART example
+# Makefile for Blinky
 #
 # NOTE: edit F_OSC and DUDPORT to support either directly programming
 # the hardware using a programming cable, or Arduino bootloader.
@@ -42,9 +42,9 @@ FUSEOPT = -U hfuse:w:0xd9:m
 
 AVRDUDE  = avrdude $(DUDEPORT) -p $(DUDEMCU) -y -u 
 
-objects = main.o uart.o ../libs/ioport.o i2c_wiki.o parse.o laser_io.o format_mv.o
+objects = main.o
 
-headers = uart.h ../libs/ioport.h i2c_wiki.h parse.h format_mv.h
+headers =
 
 all: $(objects)  main.hex list
 
