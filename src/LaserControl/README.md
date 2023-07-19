@@ -1,11 +1,12 @@
 # Laser control first version
 
-## Rev 1.0 ECOs
+Hardware ECOS:  https://gitlab.com/eshazen/i2c-isolator-test/-/tree/main/iso-master-fmc
 
-* MOSI and MISO swapped on ISP connector
-* R4 and R5 shuld be smaller (red LEDs are quite dim)
-* Missing pull-ups on all local I2C buses (sigh!)
-* Missing pull-ups on all remote I2C buses (double sigh!)
+## To Do
+
+* Add timeouts for SCL/SDA stuck low
+* Reset I2C bus Mux each time used
+* add "masked" laser enable (e.g. "E 001100")
 
 ## Rev 1.0 Debug Log
 
