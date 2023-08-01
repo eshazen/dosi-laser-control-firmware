@@ -23,11 +23,13 @@ int htoi( char *s) {
       else
 	n += 10 + (toupper(c) - 'A');
     }
+    ++s;
   }
+  return n;
 }
 
 int my_atoi( char *s) {
-  if( !strcasecmp( s, "0x"))
+  if( strlen(s) > 2 && !strncasecmp( s, "0x", 2))
     return( htoi( s+2));
   else
     return( atoi( s));

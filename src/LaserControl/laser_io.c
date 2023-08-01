@@ -1,3 +1,11 @@
+//
+// I2C functions for laser board
+//
+
+// #define DEBUG
+
+// issue separate convert for each channel
+#define SINGLE_CH_ADC
 
 #include <stdio.h>
 #include <stdint.h>
@@ -23,8 +31,14 @@ static uint8_t data[16];
 #define ADC_ADDR_W ADDR_W(ADC_ADDR)
 #define ADC_ADDR_R ADDR_R(ADC_ADDR)
 
-#define ADC_SETUP 0xd2
-#define ADC_CONF 0x0f
+// | reg sel2 sel1 sel0 | clk bip nrst x
+// |  1    1    1    1  |  0   0   1   0     
+#define ADC_SETUP 0xf2
+// | reg scn1 scn0 cs3 | cs2 cs1 cs0 sgl |
+// |  0   0    0    0  |  1   1   1   1  |   scan all channels
+#define ADC_CONF_SCAN 0x0f
+// |  0   1    1    c  |  c   c   c   1  |   convert one channel
+#define ADC_CONF_SINGLE(c) (0x61|((c)<<1))
 
 // PCA9547 I2C Mux address = 111 0aaa 
 #define MUX_ADDR 0x70
@@ -79,6 +93,50 @@ bool laser_set_pot( uint8_t v, uint8_t a) {
   return nack;
 }
 
+#ifdef DEBUG
+void pnack( bool nack) {
+  if( nack)
+    putchar('N');
+  else
+    putchar('A');
+}
+#endif
+
+
+//
+// read digital pot (to 16 word buffer)
+//
+bool laser_read_pot( uint16_t* vals) {
+  bool nack = false;
+  uint8_t c0;
+  uint8_t c1;
+  
+  // command byte including register address
+  for( uint8_t a=0; a<16; a++) {
+    nack |= i2c_write_byte( true, false, DPOT_ADDR_W);
+#ifdef DEBUG
+    pnack( nack);
+#endif    
+    // address = a3 a2 a1 a0 1 1 0 0    for write
+    nack |= i2c_write_byte( false, false, ((a & 15) << 4) | 0xc );
+#ifdef DEBUG
+    pnack( nack);
+#endif    
+    nack |= i2c_write_byte( true, false, DPOT_ADDR_R);    
+#ifdef DEBUG
+    pnack( nack);
+#endif    
+    c1 = i2c_read_byte( false, false);
+    c0 = i2c_read_byte( true, true);
+    vals[a] = (c1 << 8) | c0;
+#ifdef DEBUG
+    putchar('|');
+#endif    
+  }
+
+  return nack;
+}
+
 //
 // read laser ADC, 8 channels
 //
@@ -88,9 +146,29 @@ bool laser_read_adc( uint16_t* vals) {
   uint8_t c1;
   bool nack = false;
 
+#ifdef SINGLE_CH_ADC
+
+  // convert channels individually in a loop
+  for( int i=0; i<8; i++) {
+    nack |= i2c_write_byte( true, false, ADC_ADDR_W);
+    nack |= i2c_write_byte( false, false, ADC_SETUP);
+    nack |= i2c_write_byte( false, true, ADC_CONF_SINGLE(i));
+  
+    nack |= i2c_write_byte( true, false, ADC_ADDR_R);
+
+    c1 = i2c_read_byte( false, false);
+    c0 = i2c_read_byte( true, false);
+    vals[i] = ((c1 & 15) << 8) | c0;
+  }  
+
+#else  
+
+  // let the ADC convert channels on it's own
+  // this gives funny results for some inputs, so don't use it!
+  
   nack |= i2c_write_byte( true, false, ADC_ADDR_W);
   nack |= i2c_write_byte( false, false, ADC_SETUP);
-  nack |= i2c_write_byte( false, true, ADC_CONF);
+  nack |= i2c_write_byte( false, true, ADC_CONF_SCAN);
   
   if( nack)
     return nack;
@@ -106,6 +184,8 @@ bool laser_read_adc( uint16_t* vals) {
       c0 = i2c_read_byte( false, false);
     vals[i] = ((c1 & 15) << 8) | c0;
   }    
+
+#endif  
 
   return nack;
 }

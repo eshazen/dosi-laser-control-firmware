@@ -17,7 +17,7 @@ The firmware accepts control commands from either a USB/serial adapter
 in the DOSI box.  The protocol used is asynchronous serial (UART) with
 the following settings:
 
-* 9600 Baud
+* 1200 Baud
 * 8 data bits
 * 1 stop bit
 * no parity
@@ -29,16 +29,37 @@ Commands consist of an ASCII text string followed by a CR and/or LF
 character.  Each command will produce a response, which consists of
 zero or more lines of text, followed again by the prompt "> ".
 
+Line editing supported:
+   DEL or Backspace will delete and move cursor left
+   ^P will recall the last line
+
 Each command consists of a single alphabetic character, followed by
 zero or more space-separated arguments.  The arguments may be decimal
 numbers, or hex numbers with "0x" prefix.
 
 Here is a preliminary list of commands:
 
-    H                 - help, list commands
-    L <value>         - set on-board LEDs to binary value
-    I <laser> <value> - set laser current <laser> 0-5 <value> 0-255
-	R <laser> [<ch>]  - read laser ADC optional <ch> 0-7 or all
-	E <laser>         - enable laser
-	D [<laser>]       - disable laser (or all if not specified)
+    H       - help
+    X       - debug read
+    E l     - enable
+    D [l]   - disable
+    L v     - set LEDs
+    I l mv  - set laser VSET in mv
+    N l mv  - set laser current (non-volatile)
+    C       - clear I2C errors
+    S l     - select I2C bus l
+    P l     - dump digital pot
+    P l r v - set digital pot reg
+    R l     - read laser ADC
 
+A few notes:
+
+```E``` (enable) can take either an integer 0-5 or a 6-digit binary string.
+
+```L``` (LEDs) sets the state of two LEDs on the control board for debugging.
+<br>A value of (0, 1, 2, 3) corresponds to (none, LED1, LED2, both) on.
+
+```I``` and ```N``` expect a value in mv (0-2500).  There is some
+error due to the integer conversion from 2500 to 255 and also the ADC
+quantization.  The value of VSET read using the ADC is pretty
+accurate.

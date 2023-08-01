@@ -5,8 +5,8 @@ Hardware ECOS:  https://gitlab.com/eshazen/i2c-isolator-test/-/tree/main/iso-mas
 ## To Do
 
 * Add timeouts for SCL/SDA stuck low
-* Reset I2C bus Mux each time used
-* add "masked" laser enable (e.g. "E 001100")
+* [not needed?] Reset I2C bus Mux each time used
+* [DONE] add "masked" laser enable (e.g. "E 001100")
 
 ## Rev 1.0 Debug Log
 
@@ -17,7 +17,4 @@ Hardware ECOS:  https://gitlab.com/eshazen/i2c-isolator-test/-/tree/main/iso-mas
 * I2C not working (always get "I2C ERR") <br>
   _Missing resistors_
 * I2C working fine with pull-ups added
-
-
-
 

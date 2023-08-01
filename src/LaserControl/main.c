@@ -19,13 +19,16 @@
 #include "i2c_wiki.h"
 #include "laser_io.h"
 #include "parse.h"
+#include "format_mv.h"
 
 // create a file pointer for read/write to USART0
 // not in C++!
-static char buff[40];
+static char buff[40];		/* input buffer */
+static char save[40];		/* copy for recall */
 static char tmp[10];
 
-static uint16_t adc[8];
+// 8 words for ADC, 16 words for d-pot
+static uint16_t adc[16];
 
 static int i;
 static int n;
@@ -45,14 +48,16 @@ char *argv[MAXTOK];
 const char menu[] PROGMEM =
   "  H       - help\n"  \
   "  X       - debug read\n" \
-  "  E l     - enaable\n" \
+  "  E l     - enable\n" \
   "  D [l]   - disable\n" \
   "  L v     - set LEDs\n" \
-  "  I l v   - set laser l current to v\n" \
-  "  N l v   - set laser current (non-volatile)\n" \
+  "  I l mv  - set laser VSET in mv\n" \
+  "  N l mv  - set laser VSET (non-volatile)\n" \
   "  C       - clear I2C errors\n" \
   "  S l     - select I2C bus l\n" \
-  "  R l [c] - read laser channel\n";
+  "  P l     - dump digital pot\n" \
+  "  P l r v - set digital pot reg\n" \
+  "  R l     - read laser ADC\n";
 const char errmsg[] PROGMEM = "CMD ERR";
 const char erri2c_s[] PROGMEM = "I2C SEL ERR";
 const char erri2c_w[] PROGMEM = "I2C WRT ERR";
@@ -71,7 +76,7 @@ int main (void)
   stdout = &usart0_str;		/* connect UART to stdout */
   stdin = &usart0_str;		/* connect UART to stdin */
 
-  puts_P( PSTR("DOSI Laser Control v0.9"));
+  puts_P( PSTR("DOSI Laser Control v1.0"));
   
   while( 1) {
 
@@ -81,12 +86,40 @@ int main (void)
     putchar('>');
 
     USART0GetString( buff, sizeof( buff));
+    memcpy( save, buff, sizeof(buff));
 
-    int argc = parse( buff, argv, iargv, MAXTOK);
+    int argc = parse( save, argv, iargv, MAXTOK);
+    char cmd = toupper( *argv[0]);
 
-    switch( toupper( *buff)) {
+    switch( cmd) {
     case 'H':
       puts_P( menu);
+      break;
+
+    // write or read POT registers
+    //   "P n"      - dump 16 registers from pot attached to channel n
+    //   "P n r v"  - write 1 register r with value v
+    //
+    case 'P':
+      if( argc == 2) {
+	if( laser_sel_chan( iargv[1]))
+	  puts_P( erri2c_s);
+	if( laser_read_pot( adc))
+	  puts_P( erri2c_r);
+	for( i=0; i<16; i++) {
+	  itoa( i, tmp, 10);
+	  fputs( tmp, stdout);
+	  fputs( " 0x", stdout);
+	  itoa( adc[i], tmp, 16);
+	  puts( tmp);
+	}
+      } else if( argc == 4) {
+	if( laser_sel_chan( iargv[1]))
+	  puts_P( erri2c_s);
+	if( laser_set_pot( iargv[3], iargv[2]))
+	  puts_P( erri2c_w);
+      } else
+	puts_P( errmsg);
       break;
 
     case 'S':
@@ -112,9 +145,15 @@ int main (void)
       break;
 
     case 'E':
-      if( argc >= 2)
-	laser_enable( iargv[1], true);
-      else
+      if( argc >= 2) {
+	char *s = argv[1];
+	if( strlen( s) == 6) { /* binary enable string */
+	  for( i=0; i<6; i++)
+	    laser_enable( i, s[i] == '1');
+	} else {
+	  laser_enable( iargv[1], true);
+	}
+      } else
 	puts_P( errmsg);
       break;
 
@@ -127,25 +166,22 @@ int main (void)
       }
       break;
 
+    // handle both non-volatile and volatile digital pot settings
     case 'N':
-      if( argc < 3)
-	puts_P( errmsg);
-      else {
-	if( laser_sel_chan( iargv[1]))
-	  puts_P( erri2c_s);
-	if(laser_set_pot( iargv[2], 2))
-	  puts_P( erri2c_w);
-      }
-      break;
-
     case 'I':
       if( argc < 3)
 	puts_P( errmsg);
       else {
 	if( laser_sel_chan( iargv[1]))
 	  puts_P( erri2c_s);
-	if(laser_set_pot( iargv[2], 0))
-	  puts_P( erri2c_w);
+	// interpret input as mV (0-2500)
+	n = 255 - (iargv[2] / 10);
+	if( n < 0 || n > 255)
+	  puts_P( errmsg);
+	else {
+	  if( laser_set_pot( n, cmd == 'N' ? 2 : 0))
+	    puts_P( erri2c_w);
+	}
       }
       break;
 
@@ -177,7 +213,10 @@ int main (void)
 	  for( i=0; i<5; i++) {
 	    fputs( adc_name[i], stdout);
 	    putchar( ' ');
-	    format_mv( tmp, adc[i]);
+	    if( i == 3)
+	      format_degc( tmp, adc[i]);
+	    else
+	      format_mv( tmp, adc[i]);
 	    fputs( tmp, stdout);
 	    putchar( '\n');
 	  }

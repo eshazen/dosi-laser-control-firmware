@@ -2,8 +2,10 @@
 // very simple UART functions
 //
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
 #include "uart.h"
 
 // initialize the UART.  Baud rate set in uart.h
@@ -60,15 +62,27 @@ int USART0ReceiveByte( FILE *stream)
 
 //
 // read string with minimal editing
-// (only backspace recognized)
+//   (only backspace recognized)
+// ^P will echo existing string for recall
 //
 void USART0GetString( char *buffer, int max)
 {
   char *p = buffer;
   uint8_t c;
+  uint8_t n = strlen(buffer);
+  bool recall = false;
 
   while( 1) {
     c = USART0ReceiveByte( NULL);
+    if( c == '\x10') {
+      // recall the buffer... so echo it
+      if( n < max && !recall) {
+	fputs( buffer, stdout);
+	// point p at end
+	p = buffer+n;
+	recall = true;
+      }
+    }
     if( c == '\n') {
       putchar( c);
       *p++ = '\0';
