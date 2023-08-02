@@ -30,14 +30,15 @@ character.  Each command will produce a response, which consists of
 zero or more lines of text, followed again by the prompt "> ".
 
 Line editing supported:
-   DEL or Backspace will delete and move cursor left
-   ^P will recall the last line
+
+    DEL or Backspace will delete and move cursor left
+    ^P will recall the last line
 
 Each command consists of a single alphabetic character, followed by
 zero or more space-separated arguments.  The arguments may be decimal
 numbers, or hex numbers with "0x" prefix.
 
-Here is a preliminary list of commands:
+Here is the list of commands as of V1.0:
 
     H       - help
     X       - debug read
@@ -45,7 +46,7 @@ Here is a preliminary list of commands:
     D [l]   - disable
     L v     - set LEDs
     I l mv  - set laser VSET in mv
-    N l mv  - set laser current (non-volatile)
+    N l mv  - set laser VSET (non-volatile)
     C       - clear I2C errors
     S l     - select I2C bus l
     P l     - dump digital pot
@@ -56,6 +57,9 @@ A few notes:
 
 ```E``` (enable) can take either an integer 0-5 or a 6-digit binary string.
 
+    E 2            enable 3rd laser (0, 1, 2)
+	E 101000       enable 1st and 3rd lasers
+
 ```L``` (LEDs) sets the state of two LEDs on the control board for debugging.
 <br>A value of (0, 1, 2, 3) corresponds to (none, LED1, LED2, both) on.
 
@@ -63,3 +67,14 @@ A few notes:
 error due to the integer conversion from 2500 to 255 and also the ADC
 quantization.  The value of VSET read using the ADC is pretty
 accurate.
+
+```P``` Allows access to registers of the MCP4561 digital POT.
+
+    P              read/display all registers
+	P l r v        set register r to value v on laser l
+	
+    register 0 is the "live" wiper setting 0-255 (255 sets VSET=0)
+	register 2 is the "nonvolatile" setting loaded on power-up
+	registers 6-15 are scratch EEPROM for user use
+
+
