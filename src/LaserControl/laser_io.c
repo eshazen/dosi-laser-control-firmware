@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 #include "../libs/ioport.h"
@@ -17,6 +18,8 @@
 
 // data buffer
 static uint8_t data[16];
+
+extern char tmp[10];
 
 #define ADDR_W(a) ((a)<<1)
 #define ADDR_R(a) (ADDR_W(a)|1)
@@ -79,16 +82,27 @@ bool laser_sel_chan( uint8_t c) {
 
 //
 // set digital pot
-//
-bool laser_set_pot( uint8_t v, uint8_t a) {
+// values 0-0x100
+bool laser_set_pot( uint16_t v, uint8_t a) {
 
   bool nack = false;
+  uint8_t addr_byte = (a & 15) << 4;
+  // check for MSB in data
+  if( v & 0x100)
+    addr_byte |= 1;
+
+#ifdef DEBUG
+  utoa( addr_byte, tmp, 16);
+  puts( tmp);
+#endif  
+
   //  i2c_transmission_begin( DPOT_ADDR);
   nack |= i2c_write_byte( true, false, DPOT_ADDR_W);
-  // command byte including register address
-  // a3 a2 a1 a0 0 0 0 0
-  nack |= i2c_write_byte( false, false, (a & 15) << 4);
-  nack |= i2c_write_byte( false, true, v);
+  // command byte including register address and MSB (bit 8)
+  // a3 a2 a1 a0 0 0 x d8    (d8 is MSB)
+  nack |= i2c_write_byte( false, false, addr_byte);
+  // low 8 data bits
+  nack |= i2c_write_byte( false, true, v & 0xff);
 
   return nack;
 }

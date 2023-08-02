@@ -87,7 +87,7 @@ static struct {
 
 
 void laser_setup();
-bool laser_set_pot( uint8_t v, uint8_t a);
+bool laser_set_pot( uint16_t v, uint8_t a);
 bool laser_read_pot( uint16_t* vals);
 bool laser_read_adc( uint16_t* vals);
 bool laser_sel_chan( uint8_t c);

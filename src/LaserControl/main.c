@@ -25,7 +25,8 @@
 // not in C++!
 static char buff[40];		/* input buffer */
 static char save[40];		/* copy for recall */
-static char tmp[10];
+
+char tmp[10];
 
 // 8 words for ADC, 16 words for d-pot
 static uint16_t adc[16];
@@ -64,7 +65,10 @@ const char erri2c_w[] PROGMEM = "I2C WRT ERR";
 const char erri2c_r[] PROGMEM = "I2C RD ERR";
 
 // strings in RAM for now
-char *adc_name[] = { "IMON", "PMON", "VSET", "TEMP", " VCC" };
+// NOTE:  swap the first 2 and update ADC_CH_IMON when PCB design fixed
+char *adc_name[] = { "*PMON", "*IMON", " VSET", " TEMP", "  VCC" };
+// IMON channel for special treatment
+#define ADC_CH_IMON 1
 
 int main (void)
 {
@@ -76,7 +80,7 @@ int main (void)
   stdout = &usart0_str;		/* connect UART to stdout */
   stdin = &usart0_str;		/* connect UART to stdin */
 
-  puts_P( PSTR("DOSI Laser Control v1.0"));
+  puts_P( PSTR("DOSI Laser Control v1.1"));
   
   while( 1) {
 
@@ -175,8 +179,8 @@ int main (void)
 	if( laser_sel_chan( iargv[1]))
 	  puts_P( erri2c_s);
 	// interpret input as mV (0-2500)
-	n = 255 - (iargv[2] / 10);
-	if( n < 0 || n > 255)
+	n = 256 - (iargv[2] / 10);
+	if( n < 0 || n > 256)
 	  puts_P( errmsg);
 	else {
 	  if( laser_set_pot( n, cmd == 'N' ? 2 : 0))
@@ -213,13 +217,20 @@ int main (void)
 	  for( i=0; i<5; i++) {
 	    fputs( adc_name[i], stdout);
 	    putchar( ' ');
+	    n = adc[i];
 	    if( i == 3)
-	      format_degc( tmp, adc[i]);
-	    else
-	      format_mv( tmp, adc[i]);
+	      format_degc( tmp, n);
+	    else if( i == ADC_CH_IMON) {
+	      // divide V(IMON) by 9.4 (or 5/47) to get laser current directly
+	      n = n * 5 / 47;
+	      format_mv( tmp, n, 'A');
+	    } else {
+	      format_mv( tmp, n, 'V');
+	    }
 	    fputs( tmp, stdout);
 	    putchar( '\n');
 	  }
+	  puts("* Swap on V2");
 	}
       }
       break;
