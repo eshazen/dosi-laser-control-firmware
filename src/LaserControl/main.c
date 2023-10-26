@@ -3,7 +3,7 @@
  * 
  */
 
-#define DEBUG
+// #define DEBUG
 
 #include <stdio.h>
 #include <string.h>
@@ -27,6 +27,13 @@ static char buff[40];		/* input buffer */
 static char save[40];		/* copy for recall */
 
 char tmp[10];
+char pchar;
+
+#ifdef V21
+static uint8_t ADC_CH_IMON = 0;
+#else
+static uint8_t ADC_CH_IMON = 1;
+#endif
 
 // 8 words for ADC, 16 words for d-pot
 static uint16_t adc[16];
@@ -58,7 +65,9 @@ const char menu[] PROGMEM =
   "  S l     - select I2C bus l\n" \
   "  P l     - dump digital pot\n" \
   "  P l r v - set digital pot reg\n" \
+  "  G       - get ADC values\n" \
   "  R l     - read laser ADC\n";
+
 const char errmsg[] PROGMEM = "CMD ERR";
 const char erri2c_s[] PROGMEM = "I2C SEL ERR";
 const char erri2c_w[] PROGMEM = "I2C WRT ERR";
@@ -66,9 +75,11 @@ const char erri2c_r[] PROGMEM = "I2C RD ERR";
 
 // strings in RAM for now
 // NOTE:  swap the first 2 and update ADC_CH_IMON when PCB design fixed
+#ifdef V21
+char *adc_name[] = { "IMON", "PMON", " VSET", " TEMP", "  VCC" };
+#else
 char *adc_name[] = { "*PMON", "*IMON", " VSET", " TEMP", "  VCC" };
-// IMON channel for special treatment
-#define ADC_CH_IMON 1
+#endif
 
 int main (void)
 {
@@ -80,7 +91,7 @@ int main (void)
   stdout = &usart0_str;		/* connect UART to stdout */
   stdin = &usart0_str;		/* connect UART to stdin */
 
-  puts_P( PSTR("DOSI Laser Control v1.1"));
+  puts_P( PSTR("DOSI Laser Control v1.3"));
   
   while( 1) {
 
@@ -191,6 +202,8 @@ int main (void)
 
     case 'X':			/* debug */
       do {
+	
+
 #ifdef DEBUG
 	i2c_start_cond();
 	_delay_us(50);
@@ -199,13 +212,33 @@ int main (void)
 #else	
 	laser_read_adc( adc);
 #endif
-	puts("*");
+	putchar( pchar);
+	pchar = ((pchar + 1) & 0x1f) + 0x20;
 	_delay_ms( 100);
       } while( !kbhit());
       break;
       
 
-    case 'R':
+    case 'G':			/* get (software) ADC values */
+      if( argc < 2)
+	puts_P( errmsg);
+      else {
+	if( laser_sel_chan( iargv[1]))
+	  puts_P( erri2c_s);
+	if( laser_read_adc( adc))
+	  puts_P( erri2c_r);
+	else {
+	  for( i=0; i<3; i++) {
+	    format_mv( tmp, adc[i], ' ');
+	    fputs( tmp, stdout);
+	  }
+	  putchar('\n');
+	}
+      }
+      break;
+      
+
+    case 'R':			/* read (human) ADC values */
       if( argc < 2)
 	puts_P( errmsg);
       else {
@@ -230,7 +263,10 @@ int main (void)
 	    fputs( tmp, stdout);
 	    putchar( '\n');
 	  }
-	  puts("* Swap on V2");
+	  if( ADC_CH_IMON)
+	    puts("Laser V2.0 config");
+	  else
+	    puts("Laser V2.1 config");
 	}
       }
       break;

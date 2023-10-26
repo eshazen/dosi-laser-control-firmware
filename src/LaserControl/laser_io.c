@@ -74,6 +74,7 @@ void laser_setup() {
 bool laser_sel_chan( uint8_t c) {
   bool nack = false;
 #ifdef FMC_PINS
+  //  laser_reset_i2c();
   nack |= i2c_write_byte( true, false, MUX_ADDR_W);
   nack |= i2c_write_byte( false, true, 8 | enables[c].sel);
 #endif

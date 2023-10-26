@@ -18,10 +18,13 @@
 
 #---------- FMC Target ----------
 MCU = atmega88
-F_OSC = 1000000
-EXTRAOPT = -DFMC_PINS
+F_OSC = 8000000
+# define V21 for 2.1 laser board (swap IMON, PMON by default)
+EXTRAOPT = -DFMC_PINS -DV21
 DUDEMCU = m88
+# USBTiny programmer from Amazon
 DUDEPORT = -c usbtiny -p usb
+
 
 # Alternative programmer: for AVRISP programmer on USB
 # DUDEPORT  = -c avrispv2 -P usb
@@ -36,7 +39,9 @@ CFLAGS_NOOPT = -g -O0 -mmcu=$(MCU) $(EXTRAOPT) -DF_CPU=$(F_OSC) -I../util -Wl,-u
 
 LDFLAGS = -Wl,-Map=$(<:.o=.map),--cref -mmcu=$(MCU)
 
-FUSEOPT = -U hfuse:w:0xd9:m
+# Disable clock divide-by-8
+# (default ATMega88 LFUSE is 0x62)
+FUSEOPT = -U lfuse:w:0xe2:m
 
 # programmer configuration for avrdude programming utility
 

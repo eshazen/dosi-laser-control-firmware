@@ -1,6 +1,6 @@
 #include <avr/io.h>
 
-#define USART_BAUDRATE 1200
+#define USART_BAUDRATE 9600
 #define UBRR_VALUE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
 
 #define kbhit USART0CharacterAvailable

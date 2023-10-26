@@ -2,6 +2,12 @@
 
 Hardware ECOS:  https://gitlab.com/eshazen/i2c-isolator-test/-/tree/main/iso-master-fmc
 
+## Revs for Laser board V2.1
+
+* Change order of display so PMON and IMON are correct
+* Change fuse to remove CLKDIV8 (now serial port is 9600 baud)
+* Add "G" command for quick data collection
+
 ## To Do
 
 * Add timeouts for SCL/SDA stuck low
